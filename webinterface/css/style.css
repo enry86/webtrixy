@@ -1,0 +1,12 @@
+body {
+    width:1000px;
+    margin:0 auto;
+    font-family:sans-serif;
+    color:#444;
+    text-align:center;
+}
+
+#connect-four {
+    width:700px;
+    height:650px;
+}
