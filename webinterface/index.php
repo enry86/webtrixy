@@ -17,7 +17,7 @@ $_SESSION['gameid'] = $id;
       <h1>TrixyWeb</h1>
     </header>
     <article>
-      <h1>Connect Four <?php echo $_SESSION['gameid']?></h1>
+      <h1>Connect Four</h1>
       <canvas id="connect-four">
       </canvas>
       <p id="results-box"></p>
