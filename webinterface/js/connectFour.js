@@ -14,7 +14,7 @@ var resultElement = null;
 var drawContext = null;
 var boardModel = null;
 
-var colors = ["FD0", "F30"];
+var colors = ["#FD0", "#F30"];
 var currentPlayer = 1;
 var gamePlaying = true;
 
