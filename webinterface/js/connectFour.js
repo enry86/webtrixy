@@ -1,13 +1,10 @@
+goog.provide('connectFour');
+
+goog.require('cfConf');
+goog.require('boardView');
+goog.require('cfAjax');
+
 //ConnectFour Board and Interface controller
-
-var WIDTH = 700;
-var HEIGHT = 600;
-var HEADER = 50;
-
-var COLS = 7;
-var ROWS = 6;
-
-var WINCOND = 4;
 
 var boardElement = null;
 var resultElement = null;
@@ -17,6 +14,7 @@ var boardModel = null;
 var colors = ["#FD0", "#F30"];
 var currentPlayer = 1;
 var gamePlaying = true;
+var humanTurn = true;
 
 function initBoard (boardName, resultName) {
     var board = document.getElementById (boardName);
@@ -24,8 +22,8 @@ function initBoard (boardName, resultName) {
     if (board != null && result != null) {
         resultElement = result;
         boardElement = board;
-        boardElement.width = WIDTH;
-        boardElement.height = HEIGHT + HEADER;
+        boardElement.width = cfConf.WIDTH;
+        boardElement.height = cfConf.HEIGHT + cfConf.HEADER;
         drawContext = boardElement.getContext ("2d");
         drawBoard ();
         initListeners ();
@@ -34,84 +32,25 @@ function initBoard (boardName, resultName) {
 
 }
 
-function drawBoard () {
-    drawContext.clearRect (0, 0, WIDTH, HEIGHT + HEADER);
-    drawContext.beginPath ();
-    var stepX = WIDTH / COLS;
-    var stepY = HEIGHT / ROWS;
-    var startY = HEADER;
-
-    for (var x = 0; x <= WIDTH; x += stepX) {
-        drawContext.moveTo (x, HEADER);
-        drawContext.lineTo (x, HEIGHT + HEADER);
-    }
-    for (var y = HEADER; y <= HEIGHT + HEADER; y += stepY) {
-        drawContext.moveTo (0, y);
-        drawContext.lineTo (WIDTH, y);
-    }
-    drawContext.lineWidth = 1;
-    drawContext.strokeStyle = "#ccc";
-    drawContext.stroke ();
-}
-
-function drawModel () {
-    var colWidth = (WIDTH / COLS);
-    var rowHeight = (HEIGHT / ROWS);
-    for (var r = 0; r < ROWS; r++) {
-        for (var c = 0; c < COLS; c++) {
-            var val = boardModel[r][c];
-            if (val > 0) {
-                var x = (c * colWidth) + (colWidth / 2);
-                var y = (r * rowHeight) + (rowHeight / 2) + HEADER;
-                drawPiece (x, y, colors[val - 1]);
-            }
-        }
-    }
-}
-
 function initListeners () {
     boardElement.addEventListener ("mousemove", hintMove, false);
-    boardElement.addEventListener ("mouseout", resetMoveHint, false);
-    boardElement.addEventListener ("click", performMove, false);
+    boardElement.addEventListener ("mouseout", boardView.resetMoveHint, false);
+    boardElement.addEventListener ("click", humanMove, false);
 }
 
 function hintMove (e) {
-    var colWidth = (WIDTH / COLS);
+    var colWidth = (cfConf.WIDTH / cfConf.COLS);
     var pos = getPosition (e);
     var move = getMove (pos);
 
-    resetMoveHint ();
+    boardView.resetMoveHint ();
     var legal = isMoveLegal (move);
-    drawHint ((move * colWidth) + colWidth / 2, HEADER / 2, legal);
+    drawHint ((move * colWidth) + colWidth / 2, cfConf.HEADER / 2, legal);
 }
 
 function isMoveLegal (move) {
-    return (gamePlaying && boardModel[0][move] == 0);
+    return (gamePlaying && boardModel[0][move] == 0 && humanTurn);
 }
-
-function resetMoveHint () {
-    drawContext.clearRect (0, 0, WIDTH, HEADER);
-}
-
-function drawHint (x, y, legal) {
-    drawContext.beginPath ();
-    drawContext.arc (x, y, 15, 0, Math.PI * 2, false);
-    drawContext.closePath ();
-    drawContext.lineWidth =  4;
-    var color = "#F30"
-    if (legal) color = "#09F"
-    drawContext.strokeStyle = color;
-    drawContext.stroke ();
-}
-
-function drawPiece (x, y, col) {
-    drawContext.beginPath ();
-    drawContext.arc (x, y, 40, 0, Math.PI * 2, false);
-    drawContext.closePath ();
-    drawContext.fillStyle = col;
-    drawContext.fill ();
-}
-
 
 function getPosition (e) {
     var x;
@@ -126,8 +65,8 @@ function getPosition (e) {
     }
     x -= boardElement.offsetLeft;
     y -= boardElement.offsetTop;
-    x = Math.min(x, WIDTH);
-    y = Math.min(y, HEIGHT + HEADER);
+    x = Math.min(x, cfConf.WIDTH);
+    y = Math.min(y, cfConf.HEIGHT + cfConf.HEADER);
     var pos = {
         "posX" : x,
         "posY" : y
@@ -136,7 +75,7 @@ function getPosition (e) {
 }
 
 function getMove (pos)  {
-    var colWidth = (WIDTH / COLS);
+    var colWidth = (cfConf.WIDTH / cfConf.COLS);
     var x = pos["posX"];
     var move = Math.floor (x / colWidth);
     return move;
@@ -145,32 +84,48 @@ function getMove (pos)  {
 function initBoardModel () {
     gamePlaying = true;
     boardModel = new Array ();
-    for (var r = 0; r < ROWS; r++) {
+    for (var r = 0; r < cfConf.ROWS; r++) {
         boardModel[r] = new Array();
-        for (var c = 0; c < COLS; c++) {
+        for (var c = 0; c < cfConf.COLS; c++) {
             boardModel[r][c] = 0;
         }
     }
 }
 
-function performMove (e) {
+function humanMove (e) {
     var pos = getPosition (e);
     var move = getMove (pos);
     var moved = storeMove (move);
     if (moved) {
-        currentPlayer = (currentPlayer % 2) + 1;
-        drawBoard ();
-        drawModel ();
-        var win = checkWinner();
-        if (win > 0) endGame (win);
+        humanTurn = false;
+        updateGame ();
     }
 }
+
+function brainMove (move) {
+    alert(move);
+    var moved = storeMove (move);
+    if (moved) {
+        humanTurn = true;
+        updateGame();
+    }
+}
+
+function updateGame () {
+    currentPlayer = (currentPlayer % 2) + 1;
+    drawBoard ();
+    drawModel ();
+    var win = checkWinner();
+    if (win > 0) endGame (win);
+    else if (!humanTurn) cfAjax.getMove(boardModel, brainMove);
+}
+
 
 function storeMove (move) {
     var found = false;
 
     if (isMoveLegal(move)) {
-        for (var r = ROWS - 1; r >= 0 && !found; r-- ) {
+        for (var r = cfConf.ROWS - 1; r >= 0 && !found; r-- ) {
             if (boardModel[r][move] == 0) {
                 found = true;
                 boardModel[r][move] = currentPlayer;
@@ -192,14 +147,14 @@ function checkHoriz () {
     var win = 0;
     var found = false;
 
-    for (var r = 0; r < ROWS && !found; r++) {
+    for (var r = 0; r < cfConf.ROWS && !found; r++) {
         var currWin = 0;
         var count = 0;
-        for (var c = 0; c < COLS && !found; c++) {
+        for (var c = 0; c < cfConf.COLS && !found; c++) {
             var val = boardModel[r][c];
             if (val == currWin && val > 0) {
                 count++;
-                if (count == WINCOND) found = true;
+                if (count == cfConf.WINCOND) found = true;
             }
             else {
                 currWin = val;
@@ -207,7 +162,7 @@ function checkHoriz () {
             }
         }
     }
-    if (count == WINCOND && currWin != 0) win = currWin;
+    if (count == cfConf.WINCOND && currWin != 0) win = currWin;
     return win;
 }
 
@@ -216,14 +171,14 @@ function checkVert () {
     var found = false;
     var currWin = 0;
     var count = 0;
-    for (var c = 0; c < COLS && !found; c++) {
+    for (var c = 0; c < cfConf.COLS && !found; c++) {
         currWin = 0;
         count = 0;
-        for (var r = 0; r < ROWS && !found; r++) {
+        for (var r = 0; r < cfConf.ROWS && !found; r++) {
             var val = boardModel[r][c];
             if (val == currWin && val > 0) {
                 count++;
-                if (count == WINCOND) found = true;
+                if (count == cfConf.WINCOND) found = true;
             }
             else {
                 currWin = val;
@@ -231,7 +186,7 @@ function checkVert () {
             }
         }
     }
-    if (count == WINCOND && currWin != 0) win = currWin;
+    if (count == cfConf.WINCOND && currWin != 0) win = currWin;
     return win;
 }
 
@@ -245,7 +200,7 @@ function checkDiagLeft () {
 
     var shift = 0;
 
-    for (var startRow = ROWS - 1; startRow >= WINCOND - 1 && !found; startRow--) {
+    for (var startRow = cfConf.ROWS - 1; startRow >= cfConf.WINCOND - 1 && !found; startRow--) {
         var c = 0;
         var r = startRow;
         currWin = 0;
@@ -257,7 +212,7 @@ function checkDiagLeft () {
             var val = boardModel[r][c];
             if (val == currWin && val > 0) {
                 count++;
-                if (count == WINCOND) found = true;
+                if (count == cfConf.WINCOND) found = true;
             }
             else {
                 currWin = val;
@@ -267,7 +222,7 @@ function checkDiagLeft () {
             val = boardModel[r + shift][c + shift + 1];
             if (val == currWin2 && val > 0) {
                 count2++;
-                if (count2 == WINCOND) {
+                if (count2 == cfConf.WINCOND) {
                     found = true;
                     currWin = currWin2;
                 }
@@ -295,8 +250,8 @@ function checkDiagRight () {
 
     var shift = 0;
 
-    for (var startRow = ROWS - 1; startRow >= WINCOND - 1 && !found; startRow--) {
-        var c = COLS - 1;
+    for (var startRow = cfConf.ROWS - 1; startRow >= cfConf.WINCOND - 1 && !found; startRow--) {
+        var c = cfConf.COLS - 1;
         var r = startRow;
         currWin = 0;
         count = 0;
@@ -307,7 +262,7 @@ function checkDiagRight () {
             var val = boardModel[r][c];
             if (val == currWin && val > 0) {
                 count++;
-                if (count == WINCOND) found = true;
+                if (count == cfConf.WINCOND) found = true;
             }
             else {
                 currWin = val;
@@ -317,7 +272,7 @@ function checkDiagRight () {
             val = boardModel[r + shift][c - (shift + 1)];
             if (val == currWin2 && val > 0) {
                 count2++;
-                if (count2 == WINCOND) {
+                if (count2 == cfConf.WINCOND) {
                     found = true;
                     currWin = currWin2;
                 }

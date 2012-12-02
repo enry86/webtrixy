@@ -1,0 +1,11 @@
+java -jar ../../closure-compiler/compiler.jar \
+--js closure/deps.js \
+--js connectFour.js \
+--js connectFourView.js \
+--js connectFourAjax.js \
+--js connectFourConf.js \
+--js_output_file connectFour.compiled.js \
+--warning_level VERBOSE \
+--only_closure_dependencies \
+--closure_entry_point connectFour \
+--jscomp_error accessControls

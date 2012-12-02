@@ -9,7 +9,8 @@ $_SESSION['gameid'] = $id;
     <meta charset="utf-8" />
     <meta name="robots" content="noindex" />
     <title>Trixy Home on the Web</title>
-    <script src="js/connectFour.js"></script>
+    <script src="js/closure/base.js"></script>
+    <script src="js/connectFour.compiled.js"></script>
     <link rel="stylesheet" href="css/style.css"/>
   </head>
   <body>
